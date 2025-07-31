@@ -1,19 +1,25 @@
-# Usa Python 3.10 slim como base
 FROM python:3.10-slim
 
-# Atualiza repositório e instala sox + todos os formatos
-RUN apt-get update && apt-get install -y sox libsox-fmt-all && rm -rf /var/lib/apt/lists/*
+# Instala sox e compilador C++ (g++)
+RUN apt-get update && apt-get install -y \
+    sox \
+    libsox-fmt-all \
+    g++ \
+ && rm -rf /var/lib/apt/lists/*
 
 # Define diretório de trabalho
 WORKDIR /app
 
-# Copia os arquivos da aplicação para dentro do container
+# Copia os arquivos do projeto
 COPY . /app
 
-# Instala dependências Python (coloque seu requirements.txt na raiz)
+# Dá permissão e roda o script de build dos binários C++
+RUN chmod +x build.sh && ./build.sh
+
+# Instala dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expõe porta 8080 (ou a porta que usar no app.py)
+# Expõe a porta da aplicação Flask
 EXPOSE 8080
 
 # Comando para rodar a aplicação
