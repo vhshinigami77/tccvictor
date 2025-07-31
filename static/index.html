@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gravação e análise de áudio</title>
+</head>
+<body>
+  <h1>Gravar e enviar áudio</h1>
+
+  <button id="startBtn">Gravar</button>
+  <button id="stopBtn" disabled>Parar</button>
+
+  <p id="status">Clique em "Gravar" para iniciar.</p>
+
+  <p>Nota detectada: <span id="nota"></span></p>
+  <p>Frequência dominante: <span id="freq"></span> Hz</p>
+
+  <script>
+    let mediaRecorder;
+    let chunks = [];
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusP = document.getElementById('status');
+    const notaSpan = document.getElementById('nota');
+    const freqSpan = document.getElementById('freq');
+
+    startBtn.onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        chunks = [];
+        mediaRecorder.start();
+        statusP.textContent = 'Gravando...';
+
+        mediaRecorder.ondataavailable = e => {
+          chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+
+          statusP.textContent = 'Enviando áudio para análise...';
+
+          const formData = new FormData();
+          formData.append('audio', blob, 'audio.webm');
+
+          try {
+            const response = await fetch('/upload', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await response.json();
+
+            notaSpan.textContent = data.nota || 'Não detectada';
+            freqSpan.textContent = data.dominantFrequency
+              ? data.dominantFrequency.toFixed(2)
+              : '-';
+
+            statusP.textContent = 'Análise concluída!';
+          } catch (err) {
+            statusP.textContent = 'Erro no envio/análise.';
+            console.error(err);
+          }
+        };
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      } catch (err) {
+        alert('Erro ao acessar microfone.');
+        console.error(err);
+      }
+    };
+
+    stopBtn.onclick = () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        statusP.textContent = 'Parando gravação...';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      }
+    };
+  </script>
+</body>
+</html>
+
