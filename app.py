@@ -74,7 +74,7 @@ def upload_audio():
     # 8. Ler frequência de resultado_saida.txt
     freq = None
     try:
-        with open('resultado_saida.txt') as f:
+        with open(f'resultado_{uid}.txt') as f:
             line = f.readline()
             freq = float(line.split()[0]) if line else None
     except Exception as e:
