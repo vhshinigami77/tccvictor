@@ -23,47 +23,47 @@ def upload_audio():
     audio = request.files['audio']
     uid = str(uuid.uuid4())
 
+    original_path = os.path.join(UPLOAD_FOLDER, f'{uid}_original')
     wav_path = os.path.join(UPLOAD_FOLDER, f'{uid}.wav')
     dat_path = os.path.join(UPLOAD_FOLDER, f'{uid}.dat')
 
-    # 1. Salvar o áudio enviado
-    audio.save(wav_path)
+    # Salva o arquivo original com extensão para o ffmpeg reconhecer
+    filename = audio.filename
+    original_path += os.path.splitext(filename)[1]
+    audio.save(original_path)
 
-    # 2. Converter WAV para DAT com sox (PCM 44100Hz mono)
-    try:
-        subprocess.run([
-            'sox', wav_path, '-r', '44100', dat_path
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Erro ao converter com sox: {e}'}), 500
+    # 1. Converte o original para WAV 44.1kHz mono com ffmpeg
+    subprocess.run([
+        'ffmpeg', '-y', '-i', original_path,
+        '-ar', '44100', '-ac', '1',
+        wav_path
+    ], check=True)
 
-    # 3. Compilar 'saida'
-    try:
-        subprocess.run([
-            'g++', 'gera_espectro4_ok.cpp', 'nilton_basics_ok.cpp', '-o', 'saida'
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Erro ao compilar gera_espectro4_ok.cpp: {e}'}), 500
+    # 2. Usa sox para converter WAV para arquivo raw PCM 16 bits (.dat)
+    subprocess.run([
+        'sox', wav_path,
+        '-r', '44100',
+        '-c', '1',
+        '-b', '16',
+        '-e', 'signed-integer',
+        dat_path
+    ], check=True)
 
-    # 4. Executar './saida <uid> <dat_path> 0.5'
-    try:
-        subprocess.run(['./saida', uid, dat_path, '0.5'], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Erro ao executar ./saida: {e}'}), 500
+    # 3. Compilar o programa principal (gera espectro)
+    subprocess.run([
+        'g++', 'gera_espectro4_ok.cpp', 'nilton_basics_ok.cpp', '-o', 'saida'
+    ], check=True)
 
-    # 5. Compilar 'shownote.cpp'
-    try:
-        subprocess.run(['g++', 'shownote.cpp', '-o', 'resultado'], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Erro ao compilar shownote.cpp: {e}'}), 500
+    # 4. Executar análise espectral
+    subprocess.run(['./saida', uid, dat_path, '0.5'], check=True)
 
-    # 6. Executar './resultado resultado_<uid>.txt'
-    try:
-        subprocess.run(['./resultado', f'resultado_{uid}.txt'], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'Erro ao executar ./resultado: {e}'}), 500
+    # 5. Compilar o programa de resultado (mostra nota)
+    subprocess.run(['g++', 'shownote.cpp', '-o', 'resultado'], check=True)
 
-    # 7. Ler nota detectada
+    # 6. Executar programa que gera o arquivo de nota
+    subprocess.run(['./resultado', f'resultado_{uid}.txt'], check=True)
+
+    # 7. Ler nota do arquivo 'nota.txt'
     try:
         with open('nota.txt') as f:
             nota = f.read().strip()
@@ -71,10 +71,10 @@ def upload_audio():
         nota = 'Erro ao ler nota.txt'
         print(e)
 
-    # 8. Ler frequência de resultado_saida.txt
+    # 8. Ler frequência do arquivo resultado_saida.txt
     freq = None
     try:
-        with open(f'resultado_{uid}.txt') as f:
+        with open('resultado_saida.txt') as f:
             line = f.readline()
             freq = float(line.split()[0]) if line else None
     except Exception as e:
