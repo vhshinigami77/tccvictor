@@ -4,7 +4,7 @@
 
 int main()
 {
-    FILE *entrada = fopen("resultado_saida.txt", "r");
+    FILE *entrada = fopen(argv[1], "r");
     if (!entrada) {
         fprintf(stderr, "Erro: não foi possível abrir resultado_saida.txt\n");
         return 1;
