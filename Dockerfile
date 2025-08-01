@@ -15,7 +15,7 @@ WORKDIR /app
 COPY . /app
 
 # Compila os binários C++
-RUN chmod +x build.sh && ./build.sh
+#RUN chmod +x build.sh && ./build.sh
 
 # Instala dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
