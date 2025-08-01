@@ -32,7 +32,7 @@ def upload_audio():
     subprocess.run(['./saida', uid, dat_path, '0.5'], check=True)
 
     # Executa o shownote que gera nota.txt
-    subprocess.run(['./shownote'], check=True)
+    subprocess.run(['./resultado'], check=True)
 
     # Lê a nota detectada
     nota = "Desconhecida"
