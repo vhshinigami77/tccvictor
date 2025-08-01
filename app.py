@@ -46,6 +46,7 @@ def upload_audio():
         '-c', '1',
         '-b', '16',
         '-e', 'signed-integer',
+        '-t', 'raw',
         dat_path
     ], check=True)
 
