@@ -48,8 +48,7 @@ def upload_audio():
     subprocess.run(['g++', 'shownote.cpp', '-o', 'resultado'], check=True)
 
     # 6. Executar './resultado'
-    subprocess.run(['./resultado'], check=True)
-
+    subprocess.run(['./resultado', f'resultado_{uid}.txt'], check=True)
     # 7. Ler nota.txt
     try:
         with open('nota.txt') as f:
