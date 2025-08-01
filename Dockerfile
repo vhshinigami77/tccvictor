@@ -1,26 +1,27 @@
 FROM python:3.10-slim
 
-# Instala sox e compilador C++ (g++)
+# Instala dependências do sistema
 RUN apt-get update && apt-get install -y \
+    ffmpeg \
     sox \
     libsox-fmt-all \
     g++ \
  && rm -rf /var/lib/apt/lists/*
 
-# Define diretório de trabalho
+# Define o diretório de trabalho
 WORKDIR /app
 
 # Copia os arquivos do projeto
 COPY . /app
 
-# Dá permissão e roda o script de build dos binários C++
+# Compila os binários C++
 RUN chmod +x build.sh && ./build.sh
 
 # Instala dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expõe a porta da aplicação Flask
+# Expõe a porta da aplicação
 EXPOSE 8080
 
-# Comando para rodar a aplicação
+# Comando para iniciar o Flask
 CMD ["python", "app.py"]
