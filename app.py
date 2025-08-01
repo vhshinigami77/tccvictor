@@ -26,30 +26,44 @@ def upload_audio():
     wav_path = os.path.join(UPLOAD_FOLDER, f'{uid}.wav')
     dat_path = os.path.join(UPLOAD_FOLDER, f'{uid}.dat')
 
-    # 1. Salvar o áudio
+    # 1. Salvar o áudio enviado
     audio.save(wav_path)
 
-    # 2. Converter WAV para DAT (PCM 44100Hz mono)
-    subprocess.run([
-        'ffmpeg', '-y', '-i', wav_path,
-        '-f', 's16le', '-ar', '44100', '-ac', '1',
-        dat_path
-    ], check=True)
+    # 2. Converter WAV para DAT com sox (PCM 44100Hz mono)
+    try:
+        subprocess.run([
+            'sox', wav_path, '-r', '44100', dat_path
+        ], check=True)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Erro ao converter com sox: {e}'}), 500
 
     # 3. Compilar 'saida'
-    subprocess.run([
-        'g++', 'gera_espectro4_ok.cpp', 'nilton_basics_ok.cpp', '-o', 'saida'
-    ], check=True)
+    try:
+        subprocess.run([
+            'g++', 'gera_espectro4_ok.cpp', 'nilton_basics_ok.cpp', '-o', 'saida'
+        ], check=True)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Erro ao compilar gera_espectro4_ok.cpp: {e}'}), 500
 
     # 4. Executar './saida <uid> <dat_path> 0.5'
-    subprocess.run(['./saida', uid, dat_path, '0.5'], check=True)
+    try:
+        subprocess.run(['./saida', uid, dat_path, '0.5'], check=True)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Erro ao executar ./saida: {e}'}), 500
 
-    # 5. Compilar 'shownote.cpp' → 'resultado'
-    subprocess.run(['g++', 'shownote.cpp', '-o', 'resultado'], check=True)
+    # 5. Compilar 'shownote.cpp'
+    try:
+        subprocess.run(['g++', 'shownote.cpp', '-o', 'resultado'], check=True)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Erro ao compilar shownote.cpp: {e}'}), 500
 
-    # 6. Executar './resultado'
-    subprocess.run(['./resultado', f'resultado_{uid}.txt'], check=True)
-    # 7. Ler nota.txt
+    # 6. Executar './resultado resultado_<uid>.txt'
+    try:
+        subprocess.run(['./resultado', f'resultado_{uid}.txt'], check=True)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': f'Erro ao executar ./resultado: {e}'}), 500
+
+    # 7. Ler nota detectada
     try:
         with open('nota.txt') as f:
             nota = f.read().strip()
