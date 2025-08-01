@@ -52,3 +52,6 @@ def upload_audio():
         nota = 'ERRO: nota.txt não encontrado'
 
     return jsonify({'nota': nota})
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
+
